@@ -61,6 +61,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helper\Model\ColumnMapping.cs" />
+    <Compile Include="Helper\Model\FontStyle.cs" />
+    <Compile Include="Helper\Model\NpoiDataType.cs" />
+    <Compile Include="Helper\Model\NpoiParam.cs" />
+    <Compile Include="Helper\NpoiHelper.cs" />
+    <Compile Include="Helper\SampleTest.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
