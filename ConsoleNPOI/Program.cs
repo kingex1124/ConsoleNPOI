@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static ConsoleNPOI.MyHelper.SampleTest2;
 
 namespace ConsoleNPOI
 {
@@ -23,6 +24,7 @@ namespace ConsoleNPOI
 			//pg.CreateExcelFile();
 
 			SampleTest2 s = new SampleTest2();
+			var re = NpoiHelper.ImportExcel<Sample>(@"C:\Users\011714\Desktop\result.xlsx", "data");
 		
 		}
 
@@ -288,7 +290,7 @@ namespace ConsoleNPOI
 		public void ReadFromExcelFile(string filePath)
 		{
 			IWorkbook wk = null;
-			string extension = System.IO.Path.GetExtension(filePath);
+			string extension = Path.GetExtension(filePath);
 			try
 			{
 				FileStream fs = File.OpenRead(filePath);
@@ -308,7 +310,6 @@ namespace ConsoleNPOI
 				fs.Close();
 				//讀取當前表數據 (取第一個Sheet)
 				ISheet sheet = wk.GetSheetAt(0);
-
 
 				IRow row = sheet.GetRow(0);  //讀取當前行數據
 											 //LastRowNum 是當前表的總行數-1（註意）
@@ -351,14 +352,9 @@ namespace ConsoleNPOI
 						case CellType.Numeric:
 							// Date comes here
 							if (DateUtil.IsCellDateFormatted(cell))
-							{
 								value = cell.DateCellValue;
-							}
-							else
-							{
-								// Numeric type
+							else // Numeric type
 								value = cell.NumericCellValue;
-							}
 							break;
 						case CellType.Boolean:
 							// Boolean type
@@ -374,7 +370,7 @@ namespace ConsoleNPOI
 					}
 				}
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
 				value = "";
 			}

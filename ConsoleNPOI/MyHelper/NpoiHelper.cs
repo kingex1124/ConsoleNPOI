@@ -1,5 +1,7 @@
 ﻿using ConsoleNPOI.MyHelper.Model;
+using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -276,5 +278,84 @@ namespace ConsoleNPOI.MyHelper
                 workbook = null;
             }
         }
+
+        public static List<T> ImportExcel<T>(string filePath,string sheetName)
+        {
+            var result = new List<T>();
+
+            IWorkbook wookbook = null;
+            string extension = Path.GetExtension(filePath);
+            try
+            {
+                FileStream fs = File.OpenRead(filePath);
+                if (extension == ".xls") // 2003
+                    wookbook = new HSSFWorkbook(fs);
+                else // 2007 xlsx
+                    wookbook = new XSSFWorkbook(fs);
+
+                fs.Close();
+
+                ISheet sheet = wookbook.GetSheet(sheetName);
+
+                for (int i = 1; i <= sheet.LastRowNum; i++)
+                {
+                    IRow row = sheet.GetRow(i);
+
+                    if (row != null)
+                    {
+                        T t = Activator.CreateInstance<T>();
+                        for (int j = 0; j < row.LastCellNum; j++)
+                            typeof(T).GetProperties()[j].SetValue(t, GetCellValue(row.GetCell(j)));
+
+                        result.Add(t);
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+            return result;
+        }
+
+        public static object GetCellValue(ICell cell)
+        {
+            object value = null;
+            try
+            {
+                if (cell.CellType != CellType.Blank)
+                {
+                    switch (cell.CellType)
+                    {
+                        case CellType.Numeric:
+                            // Date comes here
+                            if (DateUtil.IsCellDateFormatted(cell))
+                                value = cell.DateCellValue;
+                            else // Numeric type
+                                value = cell.NumericCellValue;
+                            break;
+                        case CellType.Boolean:
+                            // Boolean type
+                            value = cell.BooleanCellValue;
+                            break;
+                        case CellType.Formula:
+                            value = cell.CellFormula;
+                            break;
+                        default:
+                            // String type
+                            value = cell.StringCellValue;
+                            break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                value = "";
+            }
+            return value;
+        }
+
     }
 }
