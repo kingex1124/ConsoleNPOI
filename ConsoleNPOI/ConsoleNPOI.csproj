@@ -67,6 +67,12 @@
     <Compile Include="Helper\Model\NpoiParam.cs" />
     <Compile Include="Helper\NpoiHelper.cs" />
     <Compile Include="Helper\SampleTest.cs" />
+    <Compile Include="MyHelper\Model\ColumnMapping.cs" />
+    <Compile Include="MyHelper\Model\FontStyle.cs" />
+    <Compile Include="MyHelper\Model\NpoiDataType.cs" />
+    <Compile Include="MyHelper\Model\NpoiParam.cs" />
+    <Compile Include="MyHelper\NpoiHelper.cs" />
+    <Compile Include="MyHelper\SampleTest2.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -74,5 +80,6 @@
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -1,4 +1,5 @@
-﻿using NPOI.HSSF.UserModel;
+﻿using ConsoleNPOI.MyHelper;
+using NPOI.HSSF.UserModel;
 using NPOI.HSSF.Util;
 using NPOI.SS.UserModel;
 using NPOI.SS.UserModel.Charts;
@@ -18,8 +19,11 @@ namespace ConsoleNPOI
 	{
 		static void Main(string[] args)
 		{
-			Program pg = new Program();
-			pg.CreateExcelFile();
+			//Program pg = new Program();
+			//pg.CreateExcelFile();
+
+			SampleTest2 s = new SampleTest2();
+		
 		}
 
 		#region 寫入Excel
@@ -142,13 +146,13 @@ namespace ConsoleNPOI
 				wb = new XSSFWorkbook();
 			}
 			ICellStyle style1 = wb.CreateCellStyle();//樣式
-			style1.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Left;//文字水平對齊方式
-			style1.VerticalAlignment = NPOI.SS.UserModel.VerticalAlignment.Center;//文字垂直對齊方式
+			style1.Alignment = HorizontalAlignment.Left;//文字水平對齊方式
+			style1.VerticalAlignment = VerticalAlignment.Center;//文字垂直對齊方式
 																				  //設置邊框
-			style1.BorderBottom = NPOI.SS.UserModel.BorderStyle.Thin;
-			style1.BorderLeft = NPOI.SS.UserModel.BorderStyle.Thin;
-			style1.BorderRight = NPOI.SS.UserModel.BorderStyle.Thin;
-			style1.BorderTop = NPOI.SS.UserModel.BorderStyle.Thin;
+			style1.BorderBottom = BorderStyle.Thin;
+			style1.BorderLeft = BorderStyle.Thin;
+			style1.BorderRight = BorderStyle.Thin;
+			style1.BorderTop = BorderStyle.Thin;
 
 			style1.WrapText = true;//自動換行
 
@@ -161,15 +165,15 @@ namespace ConsoleNPOI
 			style2.SetFont(font1);//樣式裏的字體設置具體的字體樣式
 
 			//設置背景色
-			style2.FillForegroundColor = NPOI.HSSF.Util.HSSFColor.Yellow.Index;
+			style2.FillForegroundColor = HSSFColor.Yellow.Index;
 			style2.FillPattern = FillPattern.SolidForeground;
-			style2.FillBackgroundColor = NPOI.HSSF.Util.HSSFColor.Yellow.Index;
-			style2.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Left;//文字水平對齊方式
-			style2.VerticalAlignment = NPOI.SS.UserModel.VerticalAlignment.Center;//文字垂直對齊方式
+			style2.FillBackgroundColor = HSSFColor.Yellow.Index;
+			style2.Alignment = HorizontalAlignment.Left;//文字水平對齊方式
+			style2.VerticalAlignment = VerticalAlignment.Center;//文字垂直對齊方式
 
 			ICellStyle dateStyle = wb.CreateCellStyle();//樣式
-			dateStyle.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Left;//文字水平對齊方式
-			dateStyle.VerticalAlignment = NPOI.SS.UserModel.VerticalAlignment.Center;//文字垂直對齊方式
+			dateStyle.Alignment = HorizontalAlignment.Left;//文字水平對齊方式
+			dateStyle.VerticalAlignment = VerticalAlignment.Center;//文字垂直對齊方式
 
 			//設置數據顯示格式
 			IDataFormat dataFormatCustom = wb.CreateDataFormat();
