@@ -1,12 +1,15 @@
 ﻿using ConsoleNPOI.MyHelper.Model;
+using Microsoft.Practices.EnterpriseLibrary.ExceptionHandling;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,6 +17,8 @@ namespace ConsoleNPOI.MyHelper
 {
     public static class NpoiHelper
     {
+        #region 匯出excel
+
         /// <summary>
         /// 匯出Excel
         /// </summary>
@@ -118,6 +123,8 @@ namespace ConsoleNPOI.MyHelper
             cellStyle.BorderBottom = BorderStyle.Thin;
             cellStyle.BorderTop = BorderStyle.Thin;
             cellStyle.BorderRight = BorderStyle.Thin;
+
+            cellStyle.Alignment = HorizontalAlignment.Center; //水平置中
 
             //預設字型大小
             IFont font = workbook.CreateFont();
@@ -279,19 +286,33 @@ namespace ConsoleNPOI.MyHelper
             }
         }
 
+        #endregion
+
+        #region 匯入Excel
+
+        /// <summary>
+        /// 匯入Excel
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filePath"></param>
+        /// <param name="sheetName"></param>
+        /// <returns></returns>
         public static List<T> ImportExcel<T>(string filePath,string sheetName)
         {
             var result = new List<T>();
 
             IWorkbook wookbook = null;
             string extension = Path.GetExtension(filePath);
+
+            extension = string.IsNullOrWhiteSpace(extension) ? string.Empty : extension.ToLower();
+
             try
             {
                 FileStream fs = File.OpenRead(filePath);
-                if (extension == ".xls") // 2003
-                    wookbook = new HSSFWorkbook(fs);
-                else // 2007 xlsx
-                    wookbook = new XSSFWorkbook(fs);
+                if (extension == ".xls" || extension == ".xlsx") // 2003
+                    wookbook = WorkbookFactory.Create(fs); 
+                else
+                    return null;
 
                 fs.Close();
 
@@ -356,6 +377,192 @@ namespace ConsoleNPOI.MyHelper
             }
             return value;
         }
+
+        public static DataTable ImportExcelToDataTable(string filePath, ref string errorMsg, int headerRowIndex = 0)
+        {
+            errorMsg = string.Empty;
+
+            var fileExtension = Path.GetExtension(filePath);
+
+			fileExtension = string.IsNullOrWhiteSpace(fileExtension) ? string.Empty : fileExtension.ToLower();
+
+            try
+            {
+                using (var file = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    DataTable excelTable = null;
+                    byte[] bytes = new byte[file.Length];
+                    file.Read(bytes, 0, (int)file.Length);
+                    file.Position = 0;
+
+                    if (fileExtension == ".xls" || fileExtension == ".xlsx")
+                    {
+                        //註記: RenderDataTableFromExcel無法讀取CSV檔案
+                        excelTable = RenderDataTableFromExcel(file, 0, headerRowIndex);
+                    }
+                    else
+                    {
+                        errorMsg = "不支援的檔案格式!";
+                        return null;
+                    }
+                    return excelTable;
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMsg = GetCustomErrorCodeDescription(ex, "匯入失敗!", true);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 轉出Excel資料至DataTable
+        /// </summary>
+        /// <param name="excelFileStream"></param>
+        /// <param name="sheetIndex"></param>
+        /// <param name="headerRowIndex">標題列位置，-1表示無標題列</param>
+        /// <param name="cellCount">欄位數，若有指定標題列，則以標題列的欄位數為主，-1表示不指定欄位數</param>
+        /// <returns></returns>
+        public static DataTable RenderDataTableFromExcel(Stream excelFileStream, int sheetIndex = 0, int headerRowIndex = 0, int cellCount = -1)
+        {
+            var workbook = WorkbookFactory.Create(excelFileStream);
+            //指定的Sheet
+            var sheet = workbook.GetSheetAt(sheetIndex);
+            //指定為Header的Row
+
+
+            var table = ReadDataTableFromSheet(sheet, headerRowIndex, cellCount);
+            //建議使用using開啟檔案，或是外部呼叫結束時控制關閉，不要在單純讀取資料的地方關閉
+            //excelFileStream.Close(); //hint:
+            workbook = null;
+            sheet = null;
+            return table;
+        }
+
+        /// <summary>
+		/// 讀取Excel的Sheet轉換為DataTable
+		/// </summary>
+		private static DataTable ReadDataTableFromSheet(ISheet sheet, int headerRowIndex, int cellCount = -1)
+        {
+            var table = new DataTable();
+
+            IRow headerRow = null;
+            if (headerRowIndex != -1)
+                headerRow = sheet.GetRow(headerRowIndex);
+
+            var firstRow = sheet.FirstRowNum + headerRowIndex + 1;
+            if (headerRow == null)
+            {
+                headerRow = sheet.GetRow(0);
+                firstRow = sheet.FirstRowNum;
+            }
+            else
+                cellCount = headerRow.LastCellNum;
+
+            if (cellCount == -1)
+                cellCount = headerRow.LastCellNum;
+            for (int i = headerRow.FirstCellNum; i < cellCount; i++)
+            {
+                if (firstRow == 0)
+                {
+                    var column = new DataColumn("Col" + i.ToString());
+                    table.Columns.Add(column);
+                }
+                else
+                {
+                    var column = new DataColumn(headerRow.GetCell(i).ToString());
+                    table.Columns.Add(column);
+                }
+            }
+            for (int i = firstRow; i <= sheet.LastRowNum; i++)
+            {
+                var row = sheet.GetRow(i);
+                if (row == null || row.Cells.Count == 0)
+                    continue;
+
+                // 是否為空白Row
+                bool isEmptyRow = true;
+                var dataRow = table.NewRow();
+                for (int j = row.FirstCellNum; j < cellCount; j++)
+                {
+                    var cell = row.GetCell(j);
+                    if (cell != null)
+                    {
+                        var content = cell.ToString();
+                        dataRow[j] = content;
+
+                        if (!string.IsNullOrWhiteSpace(content))
+                            isEmptyRow = false;
+                    }
+                }
+
+                if (!isEmptyRow)
+                    table.Rows.Add(dataRow);
+            }
+            return table;
+        }
+
+        /// <summary>
+		/// 取得自訂錯誤描述
+		/// </summary>
+		/// <param name="ex">Exception ex</param>
+		/// <param name="defineMsg">
+		/// 預設錯誤資訊(當錯誤不在其中，則顯示[預設錯誤資訊+ex.Message]，
+		/// 例如:匯入失敗 + [Message])
+		/// </param>
+		/// <param name="replace">
+		/// 若選是，找不到代碼時，則不會帶出ex.Message，會直接回傳defineMsg
+		/// (因為有些UI介面不要顯示詳細資訊)
+		/// </param>
+		/// <returns></returns>
+		public static string GetCustomErrorCodeDescription(Exception ex, string defineMsg = "", bool replace = false)
+        {
+            var errorHeader = (string.IsNullOrWhiteSpace(defineMsg)
+                ? string.Empty
+                : defineMsg);
+            var errorMsg = errorHeader + (replace ? string.Empty : ex.Message);
+            var errorCode = GetSystemErrorCode(ex);
+            switch (errorCode)
+            {
+                //Ref: https://msdn.microsoft.com/en-us/library/windows/desktop/ms681382%28v=vs.85%29.aspx
+                // MSDN System Error Codes(錯誤代碼表)
+                // ERROR_SHARING_VIOLATION(32): The process cannot access the file because it is being used by another process.
+                // ERROR_LOCK_VIOLATION(33): The process cannot access the file because another process has locked a portion of the file.
+                case 32:
+                case 33:
+                    errorMsg = errorHeader + "檔案已被開啟或鎖定!";
+                    break;
+                case 87:
+                    errorMsg = errorHeader + "檔案路徑不得空白!";
+                    break;
+                case 6434:
+                    errorMsg = errorHeader + "Excel欄位名稱重複!";
+                    break;
+                case 5378:
+                    errorMsg = errorHeader + "欄位格式有問題!";
+                    break;
+                case 16387:
+                    errorMsg = errorHeader + "請勿插入空白欄位!";
+                    break;
+
+            }
+            if (!string.IsNullOrEmpty(errorMsg))
+                ExceptionPolicy.HandleException(ex, "Default Policy");
+            else
+                throw new Exception("Import File Error", ex);
+            return errorMsg;
+        }
+
+        public static int GetSystemErrorCode(Exception ex)
+        {
+            //Ref: https://msdn.microsoft.com/zh-tw/library/windows/desktop/ms690088%28v=vs.85%29.aspx
+            // MSDN HRESULT Define
+            //HRESULT的格式定義，後面16碼為Error Code
+            //65535轉2進位=>1111111111111111再and，可以取出所需代碼
+            return Marshal.GetHRForException(ex) & 65535;
+        }
+
+        #endregion
 
     }
 }
