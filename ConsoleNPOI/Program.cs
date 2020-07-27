@@ -24,7 +24,8 @@ namespace ConsoleNPOI
 			//pg.CreateExcelFile();
 
 			SampleTest2 s = new SampleTest2();
-			var re = NpoiHelper.ImportExcel<Sample>(@"C:\Users\011714\Desktop\result.xlsx", "data");
+			string errMessage = string.Empty;
+			var re = NpoiHelper.ImportExcel<Sample>(@"C:\Users\011714\Desktop\result.xlsx", ref errMessage);
 		
 		}
 

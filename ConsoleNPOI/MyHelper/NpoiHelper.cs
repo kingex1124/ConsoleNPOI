@@ -292,16 +292,20 @@ namespace ConsoleNPOI.MyHelper
 
         /// <summary>
         /// 匯入Excel
+        /// 取得List
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="filePath"></param>
-        /// <param name="sheetName"></param>
+        /// <param name="filePath">取得檔案路徑</param>
+        /// <param name="sheetIndex">取得Sheet的Index</param>
         /// <returns></returns>
-        public static List<T> ImportExcel<T>(string filePath,string sheetName)
+        public static List<T> ImportExcel<T>(string filePath, ref string errorMsg, int sheetIndex = 0)
         {
             var result = new List<T>();
 
+            errorMsg = string.Empty;
+
             IWorkbook wookbook = null;
+
             string extension = Path.GetExtension(filePath);
 
             extension = string.IsNullOrWhiteSpace(extension) ? string.Empty : extension.ToLower();
@@ -310,13 +314,16 @@ namespace ConsoleNPOI.MyHelper
             {
                 FileStream fs = File.OpenRead(filePath);
                 if (extension == ".xls" || extension == ".xlsx") // 2003
-                    wookbook = WorkbookFactory.Create(fs); 
+                    wookbook = WorkbookFactory.Create(fs);
                 else
+                {
+                    errorMsg = "不支援的檔案格式!";
                     return null;
+                }
 
                 fs.Close();
 
-                ISheet sheet = wookbook.GetSheet(sheetName);
+                ISheet sheet = wookbook.GetSheetAt(sheetIndex);
 
                 for (int i = 1; i <= sheet.LastRowNum; i++)
                 {
@@ -335,7 +342,8 @@ namespace ConsoleNPOI.MyHelper
             }
             catch (Exception ex)
             {
-                throw;
+                errorMsg = GetCustomErrorCodeDescription(ex, "匯入失敗!", true);
+                return null;
             }
 
             return result;
@@ -378,6 +386,14 @@ namespace ConsoleNPOI.MyHelper
             return value;
         }
 
+        /// <summary>
+        /// 匯入Excel
+        /// 取得DataTable
+        /// </summary>
+        /// <param name="filePath">檔案路徑</param>
+        /// <param name="errorMsg">錯誤資訊</param>
+        /// <param name="headerRowIndex">從第幾行開始取資料</param>
+        /// <returns></returns>
         public static DataTable ImportExcelToDataTable(string filePath, ref string errorMsg, int headerRowIndex = 0)
         {
             errorMsg = string.Empty;
@@ -429,7 +445,6 @@ namespace ConsoleNPOI.MyHelper
             //指定的Sheet
             var sheet = workbook.GetSheetAt(sheetIndex);
             //指定為Header的Row
-
 
             var table = ReadDataTableFromSheet(sheet, headerRowIndex, cellCount);
             //建議使用using開啟檔案，或是外部呼叫結束時控制關閉，不要在單純讀取資料的地方關閉

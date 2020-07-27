@@ -1,4 +1,4 @@
-﻿using ConsoleNPOI.Helper.Model;
+﻿using ConsoleNPOI.MyHelper.Model;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using NPOI.XSSF.UserModel;
@@ -10,33 +10,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ConsoleNPOI.Helper
+namespace ConsoleNPOI.MyHelper
 {
-	public class ExcelExportReportSource
-	{
-		/// <summary>
-		/// 新增資料表頭上方資訊 如果沒有請設定為null 如果要加入一行空白列請新增null至清單裡
-		/// </summary>
-		public List<List<NameValuePair<string>>> DataHeaderList { get; set; }
-
-		/// <summary>
-		/// 資料表來源
-		/// </summary>
-		public DataTable Data { get; set; }
-
-		/// <summary>
-		/// 設定欄位格式
-		/// </summary>
-		public List<NameValuePair<string>> DataFormatList { get; set; }
-	}
-
-	public partial class ExcelExportService
-	{
+    public class ExportExcelHelp
+    {
 		private XSSFWorkbook _workbook;
 		private ISheet _sheet = null;
 		private List<string> _titleList = null;
 		private List<ExcelExportReportSource> _exportReportSources = null;
-		public ExcelExportService()
+		public ExportExcelHelp()
 		{
 			_workbook = new XSSFWorkbook();
 			var cellStyle = _workbook.CreateCellStyle();
@@ -104,7 +86,7 @@ namespace ConsoleNPOI.Helper
 				int rowIndex = 0;
 				if (_titleList != null)
 				{
-					foreach (var title in _titleList) //產生至中表頭
+					foreach (var title in _titleList) //產生置中表頭
 					{
 						var titleRow = _sheet.CreateRow(rowIndex);
 						if (title != null)

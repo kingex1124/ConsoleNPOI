@@ -67,16 +67,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Helper\ExcelExportReportSource.cs" />
     <Compile Include="Helper\Model\ColumnMapping.cs" />
     <Compile Include="Helper\Model\FontStyle.cs" />
-    <Compile Include="Helper\Model\NameValuePair.cs" />
     <Compile Include="Helper\Model\NpoiDataType.cs" />
     <Compile Include="Helper\Model\NpoiParam.cs" />
     <Compile Include="Helper\NpoiHelper.cs" />
     <Compile Include="Helper\SampleTest.cs" />
+    <Compile Include="MyHelper\ExportExcelHelp.cs" />
     <Compile Include="MyHelper\Model\ColumnMapping.cs" />
+    <Compile Include="MyHelper\Model\ExcelExportReportSource.cs" />
     <Compile Include="MyHelper\Model\FontStyle.cs" />
+    <Compile Include="MyHelper\Model\NameValuePair.cs" />
     <Compile Include="MyHelper\Model\NpoiDataType.cs" />
     <Compile Include="MyHelper\Model\NpoiParam.cs" />
     <Compile Include="MyHelper\NpoiHelper.cs" />
