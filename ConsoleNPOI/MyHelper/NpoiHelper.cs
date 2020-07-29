@@ -3,12 +3,14 @@ using Microsoft.Practices.EnterpriseLibrary.ExceptionHandling;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using Org.BouncyCastle.Crypto.Tls;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,8 +21,10 @@ namespace ConsoleNPOI.MyHelper
     {
         #region 匯出excel
 
+        #region ListToExcel
+
         /// <summary>
-        /// 匯出Excel
+        /// 透過List匯出Excel
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="param"></param>
@@ -47,8 +51,7 @@ namespace ConsoleNPOI.MyHelper
             }
             catch (Exception ex)
             {
-
-                throw;
+                GetCustomErrorCodeDescription(ex);
             }
         }
 
@@ -286,6 +289,97 @@ namespace ConsoleNPOI.MyHelper
             }
         }
 
+        #region ListToExcelBinary
+
+        /// <summary>
+        /// 取得Excel二進位資料
+        /// </summary>
+        /// <typeparam name="T">資料型別</typeparam>
+        /// <param name="queryData">資料</param>
+        /// <param name="sheetName">sheet名稱</param>
+        /// <param name="TitleName">Head欄位名稱</param>
+        /// <param name="columWidth">欄位寬度</param>
+        /// <returns></returns>
+        public static byte[] GetExcelBinary<T>(IEnumerable<T> queryData,string sheetName, string[] TitleName, int[] columWidth)
+        {
+            XSSFWorkbook excel = new XSSFWorkbook();
+
+            ISheet sheet;
+
+            if (!string.IsNullOrEmpty(sheetName))
+                sheet = excel.CreateSheet(sheetName);
+            else
+                sheet = excel.CreateSheet("sheetName");
+
+            List<T> resultData = new List<T>();
+            resultData = queryData.ToList<T>();
+
+            sheet.CreateRow(0);
+
+            for (int i = 0; i < columWidth.Count<int>(); i++)
+                sheet.SetColumnWidth(i, columWidth[i]);
+
+            for (int i = 0; i < TitleName.Count<string>(); i++)
+                sheet.GetRow(0).CreateCell(i).SetCellValue(TitleName[i]);
+
+            for (int i = 1; i <= resultData.Count<T>(); i++)
+            {
+                sheet.CreateRow(i);
+                for (int j = 0; j < typeof(T).GetProperties().Count<PropertyInfo>(); j++)
+                    sheet.GetRow(i).CreateCell(j).SetCellValue(typeof(T).GetProperty(typeof(T).GetProperties()[j].Name).GetValue(resultData[i - 1]).ToString());
+            }
+            MemoryStream MS = new MemoryStream();
+            excel.Write(MS);
+            return MS.ToArray();
+        }
+
+        #endregion
+
+        #endregion
+
+        #region DataTableToExcel
+
+        /// <summary>
+        /// 透過DataTable 匯出Excel
+        /// </summary>
+        /// <param name="dt"></param>
+        /// <param name="sheetName"></param>
+        /// <param name="saveFilePath"></param>
+        public static void DataTableToExcelFile(DataTable dt, string sheetName, string saveFilePath)
+        {
+            //建立Excel 2003檔案
+            //IWorkbook wb = new HSSFWorkbook();
+            //ISheet ws;
+
+            ////建立Excel 2007檔案
+            IWorkbook wb = new XSSFWorkbook();
+            ISheet ws;
+
+            if (!string.IsNullOrEmpty(sheetName))
+                ws = wb.CreateSheet(sheetName);
+            else if (dt.TableName != string.Empty)
+                ws = wb.CreateSheet(dt.TableName);
+            else
+                ws = wb.CreateSheet("Sheet1");
+
+            ws.CreateRow(0);//第一行為欄位名稱
+            for (int i = 0; i < dt.Columns.Count; i++)
+                ws.GetRow(0).CreateCell(i).SetCellValue(dt.Columns[i].ColumnName);
+
+            for (int i = 0; i < dt.Rows.Count; i++)
+            {
+                ws.CreateRow(i + 1);
+                for (int j = 0; j < dt.Columns.Count; j++)
+                    ws.GetRow(i + 1).CreateCell(j).SetCellValue(dt.Rows[i][j].ToString());
+            }
+
+            FileStream file = new FileStream(saveFilePath, FileMode.Create);//產生檔案
+            wb.Write(file);
+            file.Close();
+        }
+
+        #endregion
+
         #endregion
 
         #region 匯入Excel
@@ -349,6 +443,12 @@ namespace ConsoleNPOI.MyHelper
             return result;
         }
 
+        /// <summary>
+        /// 將取得的值轉為excell中的欄位型別
+        /// 並將值轉為string，除了DateTime之外(為了方便在外部存取時調整格式)
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <returns></returns>
         public static object GetCellValue(ICell cell)
         {
             object value = null;
@@ -356,18 +456,19 @@ namespace ConsoleNPOI.MyHelper
             {
                 if (cell.CellType != CellType.Blank)
                 {
+                    //格式最後皆為字串 除了日期不用
                     switch (cell.CellType)
                     {
                         case CellType.Numeric:
                             // Date comes here
                             if (DateUtil.IsCellDateFormatted(cell))
-                                value = cell.DateCellValue;
-                            else // Numeric type
-                                value = cell.NumericCellValue;
+                                value = cell.DateCellValue;//.ToString("yyyy/MM/dd/HH:mm:ss");
+                            else // Numeric(double) type 數字一律轉為字串，必要時在處理
+                                value = cell.NumericCellValue.ToString();
                             break;
                         case CellType.Boolean:
                             // Boolean type
-                            value = cell.BooleanCellValue;
+                            value = cell.BooleanCellValue.ToString();
                             break;
                         case CellType.Formula:
                             value = cell.CellFormula;
@@ -382,6 +483,7 @@ namespace ConsoleNPOI.MyHelper
             catch (Exception ex)
             {
                 value = "";
+                GetCustomErrorCodeDescription(ex, "轉型失敗", true);
             }
             return value;
         }

@@ -13,7 +13,7 @@ namespace ConsoleNPOI.MyHelper
     {
         public class Sample
         {
-            public double Id { get; set; }   //故意在這裡定義為string 但輸出到Excel中需轉為數字
+            public string Id { get; set; }   //故意在這裡定義為string 但輸出到Excel中需轉為數字
             public string Name { get; set; }
             public DateTime Birthday { get; set; }
         }
@@ -22,9 +22,9 @@ namespace ConsoleNPOI.MyHelper
         {
             var data = new List<Sample>
             {
-                new Sample { Id = 1, Name = "A", Birthday = DateTime.Parse("2001/1/1 12:00") },
-                new Sample { Id = 2, Name = "B", Birthday = DateTime.Parse("2001/1/2 12:00") },
-                new Sample { Id = 3, Name = "C", Birthday = DateTime.Parse("2001/1/3 12:00") },
+                new Sample { Id = "1", Name = "A", Birthday = DateTime.Parse("2001/1/1 12:00") },
+                new Sample { Id = "2", Name = "B", Birthday = DateTime.Parse("2001/1/2 12:00") },
+                new Sample { Id = "3", Name = "C", Birthday = DateTime.Parse("2001/1/3 12:00") },
             };
 
             var param = GetParam(data);

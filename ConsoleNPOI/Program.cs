@@ -25,6 +25,7 @@ namespace ConsoleNPOI
 
 			SampleTest2 s = new SampleTest2();
 			string errMessage = string.Empty;
+
 			var re = NpoiHelper.ImportExcel<Sample>(@"C:\Users\011714\Desktop\result.xlsx", ref errMessage);
 		
 		}
@@ -90,30 +91,26 @@ namespace ConsoleNPOI
 		}
 
 		//範例二，DataTable轉成Excel檔案的方法
-		private void DataTableToExcelFile(DataTable dt)
+		public void DataTableToExcelFile(DataTable dt,string sheetName,string saveFilePath)
 		{
 			//建立Excel 2003檔案
-			IWorkbook wb = new HSSFWorkbook();
-			ISheet ws;
-
-			////建立Excel 2007檔案
-			//IWorkbook wb = new XSSFWorkbook();
+			//IWorkbook wb = new HSSFWorkbook();
 			//ISheet ws;
 
-			if (dt.TableName != string.Empty)
-			{
+			////建立Excel 2007檔案
+			IWorkbook wb = new XSSFWorkbook();
+			ISheet ws;
+
+			if(!string.IsNullOrEmpty(sheetName))
+				ws = wb.CreateSheet(sheetName);
+			else if (dt.TableName != string.Empty)
 				ws = wb.CreateSheet(dt.TableName);
-			}
 			else
-			{
 				ws = wb.CreateSheet("Sheet1");
-			}
 
 			ws.CreateRow(0);//第一行為欄位名稱
 			for (int i = 0; i < dt.Columns.Count; i++)
-			{
 				ws.GetRow(0).CreateCell(i).SetCellValue(dt.Columns[i].ColumnName);
-			}
 
 			for (int i = 0; i < dt.Rows.Count; i++)
 			{
@@ -122,7 +119,7 @@ namespace ConsoleNPOI
 					ws.GetRow(i + 1).CreateCell(j).SetCellValue(dt.Rows[i][j].ToString());
 			}
 
-			FileStream file = new FileStream(@"C:\Users\011714\Desktop\TEST\npoi.xls", FileMode.Create);//產生檔案
+			FileStream file = new FileStream(saveFilePath, FileMode.Create);//產生檔案
 			wb.Write(file);
 			file.Close();
 		}
