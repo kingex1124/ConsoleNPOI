@@ -384,6 +384,8 @@ namespace ConsoleNPOI.MyHelper
 
         #region 匯入Excel
 
+        #region ExcelToList
+
         /// <summary>
         /// 匯入Excel
         /// 取得List
@@ -487,6 +489,10 @@ namespace ConsoleNPOI.MyHelper
             }
             return value;
         }
+
+        #endregion
+
+        #region ExcelToDataTable
 
         /// <summary>
         /// 匯入Excel
@@ -619,20 +625,26 @@ namespace ConsoleNPOI.MyHelper
             return table;
         }
 
+        #endregion
+
+        #endregion
+
+        #region 錯誤處理
+
         /// <summary>
-		/// 取得自訂錯誤描述
-		/// </summary>
-		/// <param name="ex">Exception ex</param>
-		/// <param name="defineMsg">
-		/// 預設錯誤資訊(當錯誤不在其中，則顯示[預設錯誤資訊+ex.Message]，
-		/// 例如:匯入失敗 + [Message])
-		/// </param>
-		/// <param name="replace">
-		/// 若選是，找不到代碼時，則不會帶出ex.Message，會直接回傳defineMsg
-		/// (因為有些UI介面不要顯示詳細資訊)
-		/// </param>
-		/// <returns></returns>
-		public static string GetCustomErrorCodeDescription(Exception ex, string defineMsg = "", bool replace = false)
+        /// 取得自訂錯誤描述
+        /// </summary>
+        /// <param name="ex">Exception ex</param>
+        /// <param name="defineMsg">
+        /// 預設錯誤資訊(當錯誤不在其中，則顯示[預設錯誤資訊+ex.Message]，
+        /// 例如:匯入失敗 + [Message])
+        /// </param>
+        /// <param name="replace">
+        /// 若選是，找不到代碼時，則不會帶出ex.Message，會直接回傳defineMsg
+        /// (因為有些UI介面不要顯示詳細資訊)
+        /// </param>
+        /// <returns></returns>
+        public static string GetCustomErrorCodeDescription(Exception ex, string defineMsg = "", bool replace = false)
         {
             var errorHeader = (string.IsNullOrWhiteSpace(defineMsg)
                 ? string.Empty
@@ -680,6 +692,5 @@ namespace ConsoleNPOI.MyHelper
         }
 
         #endregion
-
     }
 }
