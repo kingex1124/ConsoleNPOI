@@ -30,19 +30,19 @@ namespace ConsoleNPOI.MyHelper.Model
 
         /// <summary>
         /// 資料
-        /// 必填
+        /// DataList、DataSet、DataTable擇一必填
         /// </summary>
         public List<T>[] DataList { get; set; }
 
         /// <summary>
         /// 資料
-        /// 必填
+        /// DataList、DataSet、DataTable擇一必填
         /// </summary>
         public DataSet DataSet { get; set; }
 
         /// <summary>
         /// 資料
-        /// 必填
+        /// DataList、DataSet、DataTable擇一必填
         /// </summary>
         public DataTable DataTable { get; set; }
         
