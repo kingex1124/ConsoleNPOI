@@ -28,7 +28,7 @@ namespace ConsoleNPOI.MyHelper
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="param"></param>
-        public static void ExportExcel<T>(NpoiParam<T> param)
+        public static void ListExportExcel<T>(NpoiParam<T> param)
         {
             try
             {
@@ -37,7 +37,7 @@ namespace ConsoleNPOI.MyHelper
 
                 for (int i = 0; i < sheets.Length; i++)
                 {
-                    if (param.Data[i].Any())
+                    if (param.DataList[i].Any())
                         SetSheetValue(ref param, ref sheets[i], i);
                     else
                     {
@@ -147,11 +147,11 @@ namespace ConsoleNPOI.MyHelper
         private static void SetSheetValue<T>(ref NpoiParam<T> param, ref ISheet sheet, int sheetIndex)
         {
             int line = 1;
-            
+
             //根據標題列先處理所有Style (對Npoi來說 '創建'Style在workbook中是很慢的操作 作越少次越好 絕對不要foreach在塞每行列實際資料時重覆作 只通通在標題列做一次就好)
             ICellStyle[] cellStyleArr = InitialColumnStyle(param.Workbook, param.ColumnMapping, param.DataFontStyle, sheetIndex);
 
-            foreach (var item in param.Data[sheetIndex])
+            foreach (var item in param.DataList[sheetIndex])
             {
                 sheet.CreateRow(line);
 
@@ -186,7 +186,7 @@ namespace ConsoleNPOI.MyHelper
         /// <param name="columnMapping"></param>
         /// <param name="fontStyle"></param>
         /// <returns></returns>
-        private static ICellStyle[] InitialColumnStyle(IWorkbook workbook, List<ColumnMapping>[] columnMapping, FontStyle fontStyle,int sheetIndex)
+        private static ICellStyle[] InitialColumnStyle(IWorkbook workbook, List<ColumnMapping>[] columnMapping, FontStyle fontStyle, int sheetIndex)
         {
             int cellCount = columnMapping[sheetIndex].Count;
 
@@ -247,11 +247,11 @@ namespace ConsoleNPOI.MyHelper
             switch (dataType)
             {
                 case NpoiDataType.String:
-                    if (!string.IsNullOrWhiteSpace(value)) 
+                    if (!string.IsNullOrWhiteSpace(value))
                         cell.SetCellValue(value);
                     break;
                 case NpoiDataType.Int:
-                    if (!string.IsNullOrWhiteSpace(value)) 
+                    if (!string.IsNullOrWhiteSpace(value))
                         cell.SetCellValue(Convert.ToDouble(value));
                     break;
                 case NpoiDataType.Double:
@@ -259,7 +259,7 @@ namespace ConsoleNPOI.MyHelper
                         cell.SetCellValue(Convert.ToDouble(value));
                     break;
                 case NpoiDataType.DateTime:
-                    if (!string.IsNullOrWhiteSpace(value)) 
+                    if (!string.IsNullOrWhiteSpace(value))
                         cell.SetCellValue(Convert.ToDateTime(value));
                     break;
                 case NpoiDataType.Bool:
@@ -292,91 +292,279 @@ namespace ConsoleNPOI.MyHelper
         #region ListToExcelBinary
 
         /// <summary>
-        /// 取得Excel二進位資料
+        /// 透過List<T>取得Excel二進位資料
         /// </summary>
-        /// <typeparam name="T">資料型別</typeparam>
-        /// <param name="queryData">資料</param>
-        /// <param name="sheetName">sheet名稱</param>
-        /// <param name="TitleName">Head欄位名稱</param>
-        /// <param name="columWidth">欄位寬度</param>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="param"></param>
         /// <returns></returns>
-        public static byte[] GetExcelBinary<T>(IEnumerable<T> queryData,string sheetName, string[] TitleName, int[] columWidth)
+        public static byte[] ListExportExcelBinary<T>(NpoiParam<T> param)
         {
-            XSSFWorkbook excel = new XSSFWorkbook();
-
-            ISheet sheet;
-
-            if (!string.IsNullOrEmpty(sheetName))
-                sheet = excel.CreateSheet(sheetName);
-            else
-                sheet = excel.CreateSheet("sheetName");
-
-            List<T> resultData = new List<T>();
-            resultData = queryData.ToList<T>();
-
-            sheet.CreateRow(0);
-
-            for (int i = 0; i < columWidth.Count<int>(); i++)
-                sheet.SetColumnWidth(i, columWidth[i]);
-
-            for (int i = 0; i < TitleName.Count<string>(); i++)
-                sheet.GetRow(0).CreateCell(i).SetCellValue(TitleName[i]);
-
-            for (int i = 1; i <= resultData.Count<T>(); i++)
+            try
             {
-                sheet.CreateRow(i);
-                for (int j = 0; j < typeof(T).GetProperties().Count<PropertyInfo>(); j++)
-                    sheet.GetRow(i).CreateCell(j).SetCellValue(typeof(T).GetProperty(typeof(T).GetProperties()[j].Name).GetValue(resultData[i - 1]).ToString());
+                //依情況決定要建新的 Sheet 或是用舊的 (即來自範本) 主要由SheetName來決定有幾個Sheet
+                ISheet[] sheets = GetSheet(param);
+
+                for (int i = 0; i < sheets.Length; i++)
+                {
+                    if (param.DataList[i].Any())
+                        SetSheetValue(ref param, ref sheets[i], i);
+                    else
+                    {
+                        // 若沒資料在起點寫入No Data !
+                        sheets[i].CreateRow(0);
+                        sheets[i].GetRow(0).CreateCell(0).SetCellValue("No Data !");
+                    }
+                }
+
+                MemoryStream MS = new MemoryStream();
+                param.Workbook.Write(MS);
+                return MS.ToArray();
             }
-            MemoryStream MS = new MemoryStream();
-            excel.Write(MS);
-            return MS.ToArray();
+            catch (Exception ex)
+            {
+                GetCustomErrorCodeDescription(ex);
+                return null;
+            }
         }
 
         #endregion
 
         #endregion
 
-        #region DataTableToExcel
+        #region DataSetToExcel
+
+        /// <summary>
+        /// 透過DataSet 匯出Excel
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="param"></param>
+        public static void DataSetExportExcel<T>(NpoiParam<T> param)
+        {
+            try
+            {
+                //依情況決定要建新的 Sheet 或是用舊的 (即來自範本) 主要由SheetName來決定有幾個Sheet
+                ISheet[] sheets = GetSheet(param);
+
+                for (int i = 0; i < sheets.Length; i++)
+                {
+                    if (param.DataSet.Tables.Count != 0)
+                        DataSetSetSheetValue(ref param, ref sheets[i], i);
+                    else
+                    {
+                        // 若沒資料在起點寫入No Data !
+                        sheets[i].CreateRow(0);
+                        sheets[i].GetRow(0).CreateCell(0).SetCellValue("No Data !");
+                    }
+                }
+
+                Export(param.Workbook, param.FileFullName);
+            }
+            catch (Exception ex)
+            {
+                GetCustomErrorCodeDescription(ex);
+            }
+        }
+
+        /// <summary>
+        /// 設定sheet裡面的資料
+        /// DataSet
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="param"></param>
+        /// <param name="sheet"></param>
+        /// <param name="sheetIndex"></param>
+        private static void DataSetSetSheetValue<T>(ref NpoiParam<T> param, ref ISheet sheet, int sheetIndex)
+        {
+            int line = 1;
+
+            //根據標題列先處理所有Style (對Npoi來說 '創建'Style在workbook中是很慢的操作 作越少次越好 絕對不要foreach在塞每行列實際資料時重覆作 只通通在標題列做一次就好)
+            ICellStyle[] cellStyleArr = InitialColumnStyle(param.Workbook, param.ColumnMapping, param.DataFontStyle, sheetIndex);
+
+            var table = param.DataSet.Tables[sheetIndex];
+
+            for (int i = 0; i < table.Rows.Count; i++)
+            {
+                sheet.CreateRow(line);
+
+                for (int j = 0; j < param.ColumnMapping[sheetIndex].Count; j++)
+                {
+                    // 建立欄位
+                    var cell = sheet.GetRow(line).CreateCell(j);
+
+                    // 綁定欄位Style
+                    cell.CellStyle = cellStyleArr[i];
+
+                    // 給欄位值 reflection取值
+                    string value = table.Rows[i][j].ToString();
+
+                    // 幫cell填值
+                    SetCellValue(value, ref cell, param.ColumnMapping[sheetIndex][i].DataType);
+                }
+                line++;
+            }
+
+            if (param.IsAutoFit)
+                for (int i = 0; i < param.ColumnMapping[sheetIndex].Count; i++)
+                    sheet.AutoSizeColumn(i);
+        }
+
+        #region DataSetExportBinary
+
+        /// <summary>
+        /// 透過DataSet取得Excel二進位資料
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="param"></param>
+        public static byte[] DataSetExportBinary<T>(NpoiParam<T> param)
+        {
+            try
+            {
+                //依情況決定要建新的 Sheet 或是用舊的 (即來自範本) 主要由SheetName來決定有幾個Sheet
+                ISheet[] sheets = GetSheet(param);
+
+                for (int i = 0; i < sheets.Length; i++)
+                {
+                    if (param.DataSet.Tables.Count != 0)
+                        DataSetSetSheetValue(ref param, ref sheets[i], i);
+                    else
+                    {
+                        // 若沒資料在起點寫入No Data !
+                        sheets[i].CreateRow(0);
+                        sheets[i].GetRow(0).CreateCell(0).SetCellValue("No Data !");
+                    }
+                }
+
+                MemoryStream MS = new MemoryStream();
+                param.Workbook.Write(MS);
+                return MS.ToArray();
+            }
+            catch (Exception ex)
+            {
+                GetCustomErrorCodeDescription(ex);
+                return null;
+            }
+        }
+
+        #endregion
+
+        #endregion
+
+        #region DataTableExportExcel
 
         /// <summary>
         /// 透過DataTable 匯出Excel
         /// </summary>
-        /// <param name="dt"></param>
-        /// <param name="sheetName"></param>
-        /// <param name="saveFilePath"></param>
-        public static void DataTableToExcelFile(DataTable dt, string sheetName, string saveFilePath)
+        /// <typeparam name="T"></typeparam>
+        /// <param name="param"></param>
+        public static void DataTableExportExcel<T>(NpoiParam<T> param)
         {
-            //建立Excel 2003檔案
-            //IWorkbook wb = new HSSFWorkbook();
-            //ISheet ws;
-
-            ////建立Excel 2007檔案
-            IWorkbook wb = new XSSFWorkbook();
-            ISheet ws;
-
-            if (!string.IsNullOrEmpty(sheetName))
-                ws = wb.CreateSheet(sheetName);
-            else if (dt.TableName != string.Empty)
-                ws = wb.CreateSheet(dt.TableName);
-            else
-                ws = wb.CreateSheet("Sheet1");
-
-            ws.CreateRow(0);//第一行為欄位名稱
-            for (int i = 0; i < dt.Columns.Count; i++)
-                ws.GetRow(0).CreateCell(i).SetCellValue(dt.Columns[i].ColumnName);
-
-            for (int i = 0; i < dt.Rows.Count; i++)
+            try
             {
-                ws.CreateRow(i + 1);
-                for (int j = 0; j < dt.Columns.Count; j++)
-                    ws.GetRow(i + 1).CreateCell(j).SetCellValue(dt.Rows[i][j].ToString());
+                //依情況決定要建新的 Sheet 或是用舊的 (即來自範本) 主要由SheetName來決定有幾個Sheet
+                ISheet[] sheets = GetSheet(param);
+
+                for (int i = 0; i < sheets.Length; i++)
+                {
+                    if (param.DataTable.Rows.Count != 0)
+                        DataTableSetSheetValue(ref param, ref sheets[i], i);
+                    else
+                    {
+                        // 若沒資料在起點寫入No Data !
+                        sheets[i].CreateRow(0);
+                        sheets[i].GetRow(0).CreateCell(0).SetCellValue("No Data !");
+                    }
+                }
+
+                Export(param.Workbook, param.FileFullName);
+            }
+            catch (Exception ex)
+            {
+                GetCustomErrorCodeDescription(ex);
+            }
+        }
+
+
+        /// <summary>
+        /// 設定sheet裡面的資料
+        /// DataTable
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="param"></param>
+        /// <param name="sheet"></param>
+        /// <param name="sheetIndex"></param>
+        private static void DataTableSetSheetValue<T>(ref NpoiParam<T> param, ref ISheet sheet, int sheetIndex)
+        {
+            int line = 1;
+
+            //根據標題列先處理所有Style (對Npoi來說 '創建'Style在workbook中是很慢的操作 作越少次越好 絕對不要foreach在塞每行列實際資料時重覆作 只通通在標題列做一次就好)
+            ICellStyle[] cellStyleArr = InitialColumnStyle(param.Workbook, param.ColumnMapping, param.DataFontStyle, sheetIndex);
+
+            var table = param.DataTable;
+
+            for (int i = 0; i < table.Rows.Count; i++)
+            {
+                sheet.CreateRow(line);
+
+                for (int j = 0; j < param.ColumnMapping[sheetIndex].Count; j++)
+                {
+                    // 建立欄位
+                    var cell = sheet.GetRow(line).CreateCell(j);
+
+                    // 綁定欄位Style
+                    cell.CellStyle = cellStyleArr[i];
+
+                    // 給欄位值 reflection取值
+                    string value = table.Rows[i][j].ToString();
+
+                    // 幫cell填值
+                    SetCellValue(value, ref cell, param.ColumnMapping[sheetIndex][i].DataType);
+                }
+                line++;
             }
 
-            FileStream file = new FileStream(saveFilePath, FileMode.Create);//產生檔案
-            wb.Write(file);
-            file.Close();
+            if (param.IsAutoFit)
+                for (int i = 0; i < param.ColumnMapping[sheetIndex].Count; i++)
+                    sheet.AutoSizeColumn(i);
         }
+
+        #region DataTableExportBinary
+
+        /// <summary>
+        /// 透過DataTable取得Excel二進位資料
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="param"></param>
+        public static byte[] DataTableExportBinary<T>(NpoiParam<T> param)
+        {
+            try
+            {
+                //依情況決定要建新的 Sheet 或是用舊的 (即來自範本) 主要由SheetName來決定有幾個Sheet
+                ISheet[] sheets = GetSheet(param);
+
+                for (int i = 0; i < sheets.Length; i++)
+                {
+                    if (param.DataTable.Rows.Count != 0)
+                        DataTableSetSheetValue(ref param, ref sheets[i], i);
+                    else
+                    {
+                        // 若沒資料在起點寫入No Data !
+                        sheets[i].CreateRow(0);
+                        sheets[i].GetRow(0).CreateCell(0).SetCellValue("No Data !");
+                    }
+                }
+
+                MemoryStream MS = new MemoryStream();
+                param.Workbook.Write(MS);
+                return MS.ToArray();
+            }
+            catch (Exception ex)
+            {
+                GetCustomErrorCodeDescription(ex);
+                return null;
+            }
+        }
+
+        #endregion
 
         #endregion
 
@@ -508,7 +696,7 @@ namespace ConsoleNPOI.MyHelper
 
             var fileExtension = Path.GetExtension(filePath);
 
-			fileExtension = string.IsNullOrWhiteSpace(fileExtension) ? string.Empty : fileExtension.ToLower();
+            fileExtension = string.IsNullOrWhiteSpace(fileExtension) ? string.Empty : fileExtension.ToLower();
 
             try
             {

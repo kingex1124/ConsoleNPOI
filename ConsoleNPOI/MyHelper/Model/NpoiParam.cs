@@ -1,6 +1,7 @@
 ﻿using NPOI.SS.UserModel;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,7 +32,19 @@ namespace ConsoleNPOI.MyHelper.Model
         /// 資料
         /// 必填
         /// </summary>
-        public List<T>[] Data { get; set; }
+        public List<T>[] DataList { get; set; }
+
+        /// <summary>
+        /// 資料
+        /// 必填
+        /// </summary>
+        public DataSet DataSet { get; set; }
+
+        /// <summary>
+        /// 資料
+        /// 必填
+        /// </summary>
+        public DataTable DataTable { get; set; }
         
         /// <summary>
         /// 欲新增(或已存在)的 Sheet Name

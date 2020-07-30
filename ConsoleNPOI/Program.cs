@@ -26,7 +26,7 @@ namespace ConsoleNPOI
 			SampleTest2 s = new SampleTest2();
 			string errMessage = string.Empty;
 
-			var re = NpoiHelper.ImportExcel<Sample>(@"C:\Users\011714\Desktop\result.xlsx", ref errMessage);
+			//var re = NpoiHelper.ImportExcel<Sample>(@"C:\Users\011714\Desktop\result.xlsx", ref errMessage);
 		
 		}
 
